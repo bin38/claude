@@ -1,0 +1,21 @@
+{
+  "name": "claude-animation-lite",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Hand-painted 2D cartoons in code (Clawd, Sprout), rendered on Canvas2D in Node: no Chrome, no WebGL, no GPU",
+  "scripts": {
+    "sheet": "node render.mjs --sheet=0,1,2,3,4,5 --out=out/sheet.jpg",
+    "video": "node render.mjs --clip --out=out/video.mp4",
+    "sheets": "node render.mjs --loop=sprout --sheet=1 --cols=1 --w=1920 --out=docs/sprout.jpg && node render.mjs --loop=sprout_emotions --sheet=1 --cols=1 --w=1920 --out=docs/sprout_emotions.jpg",
+    "new": "node new.mjs",
+    "demo": "node render.mjs --scene=src/scenes/demo.js --duration=11 --clip --out=out/demo.mp4"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.9"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.2.0"
+  }
+}
