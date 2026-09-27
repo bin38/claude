@@ -227,7 +227,8 @@ node render.mjs --encode --out=out/video.mp4                    # … then encod
 | `src/scenes/meet.js`, `demo.js` | a 12-second example with both characters, and an 11-second one with Clawd. **Don't copy them** (see the end of this guide) |
 | `runtime/p5lite.js` | the slice of p5 and p5.brush the engine uses, painted with Canvas2D: runs in any browser and in Node |
 | `studio.html` | open it in any browser to scrub the video (`?t=2.5` jumps to a time, `?loop=emotions` shows a loop, `?brush` swaps in the real p5.brush) |
-| `render.mjs` | Node renderer, parallel on all cores: sheets, strips, crops, stills, PNG loops, MP4. `--scene=` and `--duration=` render another scene |
+| `render.mjs` | Node renderer, parallel on all cores: sheets, strips, crops, stills, PNG loops, MP4. `--scene=`, `--duration=` and `--bpm=` render another scene |
+| `audio/synth.mjs` | music and sound effects from code: renders a scene's `window.SOUND` to WAV |
 
 ### Frames are pure functions of time
 
@@ -450,6 +451,16 @@ The kit doesn't need music, but it's built for it:
 2. Put the audio in `assets/` and set `PROJECT.audio` (or pass `--audio=`). `--clip` and `--encode` mux it in.
 3. Land hits, cuts and takes on beats (`beatN`, `pulse`). Cut on bar lines for big changes, and give each musical phrase its own visual.
 4. **Lyrics are not text.** Don't put words on screen. Act the meaning of a line instead.
+
+## Sound from code (optional)
+
+A scene can score itself. Build a list of timed events in the scene and set `window.SOUND = { events, master }`: `render.mjs --clip` then synthesises it with [audio/synth.mjs](audio/synth.mjs) and muxes it in (unless you pass `--audio` or `--no-sound`). Everything is made from oscillators and noise, so there's nothing to download and every render sounds the same. [src/scenes/overtime.js](src/scenes/overtime.js) is the worked example; its score is at the bottom of the file.
+
+- **Events:** `note` (inst: `keys`, `bass`, `pad`, `bell`, `pluck`, `lead`; `midi`, `dur`, `vel`, `pan`), `drum` (`kick`, `snare`, `hat`, `openhat`, `rim`, `tick`), `sfx` (`key`, `enter`, `buzz`, `whoosh`, `riser`, `clunk`, `hiss`, `ding`, `slam`, `poof`, `pop`, `chime`, `chirp`, `snore`, `skitter`, `tick`, `thud`, `crackle`), `tapestop` (the music winds down and stays silent until `until`) and `duck`.
+- **One source of truth.** Build the score from the same constants and arrays the animation uses (overtime.js's `KEYS` drives both the typing arms and the key clicks), so picture and sound can't drift apart.
+- **Sound follows the reads.** Give each read its sound, and keep one at a time, as with pictures. Silence is a read too: a stopped groove with only a clock ticking says more than a sting.
+- **Music sets the pulse.** Put `bpm` in config.js (or `--bpm`) to the score's tempo, so idles and dances move with it, and land hits and cuts on beats.
+- You can't hear the result, so check it: `ffmpeg -i out/x.wav -filter_complex showspectrumpic=s=2000x300 out/check/audio.png` draws a spectrogram to read against the timeline, and `-af volumedetect` gives the levels.
 
 ## Common failures
 

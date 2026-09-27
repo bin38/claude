@@ -13,7 +13,8 @@
 //     node render.mjs --loop=emotions --png --out=out/loop_emotions                          a loop's cycle as PNGs
 //   Other flags: --fps=24, --workers=N (default: CPU cores - 1), --audio=song.mp3, --ffmpeg=<path>,
 //   --scene=src/scenes/a.js[,b.js] (render these scenes instead of the ones studio.html lists), --duration=<s> (override
-//   PROJECT.duration, e.g. --scene=src/scenes/demo.js --duration=11),
+//   PROJECT.duration, e.g. --scene=src/scenes/demo.js --duration=11), --bpm=<n> (override PROJECT.bpm),
+//   --no-sound (--clip scores the scene's window.SOUND with audio/synth.mjs unless you pass --audio or this),
 //   --page=studio.html (which page's <script src> list to run), --root=<project folder> (default: this file's folder).
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import vm from 'node:vm';
@@ -31,7 +32,7 @@ const FONTS = resolve(HERE, 'runtime/fonts');
 for (const f of existsSync(FONTS) ? readdirSync(FONTS) : []) if (/\.(ttf|otf)$/i.test(f)) GlobalFonts.registerFromPath(resolve(FONTS, f));
 
 // ---------- the page: every script of studio.html in one sandbox ----------
-export async function loadPage({ root = HERE, page = 'studio.html', loop = null, scenes = null, duration = null } = {}) {
+export async function loadPage({ root = HERE, page = 'studio.html', loop = null, scenes = null, duration = null, bpm = null } = {}) {
   const html = readFileSync(resolve(root, page), 'utf8');
   const srcs = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/g)].map(m => m[1])
     .filter(s => !/^(https?:)?\/\//.test(s) && !s.includes('node_modules/') && !s.includes('p5lite'))
@@ -51,7 +52,7 @@ export async function loadPage({ root = HERE, page = 'studio.html', loop = null,
   vm.createContext(sb);
   const run = file => vm.runInContext(readFileSync(file, 'utf8'), sb, { filename: file });
   run(resolve(HERE, 'runtime/p5lite.js'));
-  for (const s of srcs) { run(resolve(root, s)); if (duration && /(^|\/)config\.js$/.test(s)) vm.runInContext(`PROJECT.duration = ${+duration}`, sb); }
+  for (const s of srcs) { run(resolve(root, s)); if (/(^|\/)config\.js$/.test(s)) { if (duration) vm.runInContext(`PROJECT.duration = ${+duration}`, sb); if (bpm) vm.runInContext(`PROJECT.bpm = ${+bpm}`, sb); } }
   await vm.runInContext('setup()', sb);
   if (loop && !vm.runInContext(`!!LOOPS[${JSON.stringify(loop)}] && (window.LOOP = LOOPS[${JSON.stringify(loop)}], true)`, sb)) throw new Error(`no loop named "${loop}"`);
   vm.runInContext('window.__frame = async t => { T = t; await redraw(); composite(t); return outC; }', sb);
@@ -100,7 +101,7 @@ async function renderPool(opts, jobs, n, mime, q, onFrame) {
 // ---------- CLI ----------
 if (isMainThread && process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = Object.fromEntries(process.argv.slice(2).map(a => { const [k, ...v] = a.replace(/^--/, '').split('='); return [k, v.length ? v.join('=') : true]; }));
-  const opts = { root: resolve(args.root || HERE), page: args.page || 'studio.html', loop: args.loop || null, scenes: args.scene ? String(args.scene).split(',') : null, duration: args.duration || null };
+  const opts = { root: resolve(args.root || HERE), page: args.page || 'studio.html', loop: args.loop || null, scenes: args.scene ? String(args.scene).split(',') : null, duration: args.duration || null, bpm: args.bpm || null };
   const fps = +(args.fps || 24), FRAMES_DIR = resolve(opts.root, 'out/frames');
   const workers = +(args.workers || Math.max(1, (availableParallelism?.() ?? cpus().length) - 1));
   const times = s => String(s).split(',').map(Number), span = s => String(s).split(':').map(Number);
@@ -157,7 +158,13 @@ if (isMainThread && process.argv[1] && resolve(process.argv[1]) === fileURLToPat
         if (++done % 24 === 0 || done === todo.length) console.log(`frame ${done}/${todo.length}  ${((Date.now() - t0) / done).toFixed(0)} ms/frame effective`);
       });
     } else {
-      const audio = args.audio || probe.eval('PROJECT.audio || ""'), out = outPath(args.out, 'out/clip.mp4'); mkdirSync(dirname(out), { recursive: true });
+      const out = outPath(args.out, 'out/clip.mp4'); mkdirSync(dirname(out), { recursive: true });
+      let audio = args.audio || probe.eval('PROJECT.audio || ""');
+      if (!audio && !args['no-sound'] && probe.eval('!!window.SOUND')) {   // the scene scores itself: synthesise it
+        const { renderSound, writeWav } = await import('./audio/synth.mjs');
+        audio = out.replace(/\.mp4$/i, '') + '.wav'; writeWav(audio, renderSound(probe.eval('window.SOUND'), len));
+        console.log(`scored ${audio}`);
+      }
       const ff = spawn(ffmpeg(), ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
         ...(audio ? ['-ss', String(a), '-t', String(b - a), '-i', resolve(opts.root, audio), '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });

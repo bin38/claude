@@ -10,7 +10,8 @@
     "video": "node render.mjs --clip --out=out/video.mp4",
     "sheets": "node render.mjs --loop=sprout --sheet=1 --cols=1 --w=1920 --out=docs/sprout.jpg && node render.mjs --loop=sprout_emotions --sheet=1 --cols=1 --w=1920 --out=docs/sprout_emotions.jpg",
     "new": "node new.mjs",
-    "demo": "node render.mjs --scene=src/scenes/demo.js --duration=11 --clip --out=out/demo.mp4"
+    "demo": "node render.mjs --scene=src/scenes/demo.js --duration=11 --clip --out=out/demo.mp4",
+    "overtime": "node render.mjs --scene=src/scenes/overtime.js --duration=16.8 --bpm=90 --clip --out=out/overtime.mp4"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.9"

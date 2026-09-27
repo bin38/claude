@@ -39,6 +39,16 @@ sprout(1150, 884, 22, { ...feel('happy', t), ...jump(t, 1.2, 1.6, 3), view: 'q',
 
 想再加角色，照着 `src/sprout.js` 的写法即可：接收同一套选项，复用共享的五官系统，身体配色交给 `bodyCols()`。
 
+## 音效和配乐也用代码生成
+
+场景里声明 `window.SOUND`（一串带时间的音符、鼓点、音效事件），`render.mjs --clip` 会用 `audio/synth.mjs` 合成立体声 WAV 并自动混进 MP4。全部由振荡器和噪声合成，不用下载素材，每次渲染结果完全相同。可用的乐器有电钢琴、贝斯、铺底、钟琴、拨弦和方波主音，音效库包括键盘声、回车、报错蜂鸣、风声、上升音、杯子落桌、蒸汽、叮、拍击、噗、成功和弦、鸟叫、鼾声、虫子爬、钟表滴答和黑胶噪声，另外还有“磁带停转”效果。
+
+示例短片《加班》（`src/scenes/overtime.js`，16.8 秒）：深夜 Clawd 敲代码，编译报错，通宵找 bug，最后一巴掌拍死 bug，天亮时趴在桌上睡着。配乐是每分钟 90 拍的 lo-fi，报错时磁带停转，只剩钟表滴答。
+
+```bash
+npm run overtime                # → out/overtime.mp4 和 out/overtime.wav
+```
+
 ## 常用命令
 
 ```bash
@@ -67,7 +77,8 @@ node new.mjs ../my-video --duration=15
 | `src/sprout.js` | 小芽 |
 | `src/timeline.js` | 镜头列表、循环、笔刷划变转场 |
 | `src/sheets.js` | 模型表（`studio.html?loop=sprout` 等） |
-| `src/scenes/` | 场景：`meet.js`（小芽登场，12 秒）、`demo.js`（坠落的星星，11 秒） |
+| `src/scenes/` | 场景：`meet.js`（小芽登场，12 秒）、`overtime.js`（加班，16.8 秒，带配乐）、`demo.js`（坠落的星星，11 秒） |
+| `audio/synth.mjs` | 用代码合成音乐和音效：把场景的 `window.SOUND` 渲染成 WAV |
 | `runtime/p5lite.js` | 用 Canvas2D 实现引擎用到的 p5 + p5.brush 子集，浏览器和 Node 通用 |
 | `render.mjs` | Node 渲染器：多线程并行，支持 contact sheet、strip、裁切、静帧、PNG 序列、MP4 |
 | `new.mjs` | 从这套工具新建视频项目 |

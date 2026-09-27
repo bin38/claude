@@ -44,6 +44,8 @@ contacts, transitions, no text, no 3D). Fix and look again.
 
 - `node render.mjs --clip --out=out/video.mp4` renders in parallel on all cores (12 s of 1080p in about 20 s on
   4 cores). Add `--audio=<file>` for music.
+- Sound: if the user wants music or effects, score the scene in code (`window.SOUND`, see "Sound from code" in the
+  guide and `src/scenes/overtime.js`); `--clip` synthesises and muxes it. Check it with a spectrogram and levels.
 - Tell the user where the video is, and what you checked.
 
 ## New characters
